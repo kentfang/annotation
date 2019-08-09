@@ -1,0 +1,117 @@
+
+
+注解和动态代理在安卓中的应用
+
+
+1：解决if..else..太多的问题
+
+    通过注解命令的方式，区分if..else的条件。
+    增强代码可读性和扩展性
+
+    查看anno包下面的代码
+
+2：属性自动注入，@BindView：自动注入view
+
+
+    编译注解，在编译阶段进行处理
+    在resources目录下，新增META-INF/services 目录，
+
+    新增文件javax.annotation.processing.Processor
+
+    在该文件中写上com.galanz.processors.GalanzProcessor （前置处理器的实现接口）
+
+    这个类必须是通过jar包的方式引入的！！！！！！
+
+    boolean process(Set<? extends TypeElement> set, RoundEnvironment roundEnvironment)
+
+    安卓有一些兼容性问题，最好同时实现
+     public Set<String> getSupportedAnnotationTypes() 需要处理的哪些注解
+     public SourceVersion getSupportedSourceVersion() 运行环境的jdk版本
+
+    思路:
+        (1)新建一个ViewBinder类,实现ViewBinder接口
+public class MainActivity$ViewBinder implements  ViewBinder<com.galanz.annotation.MainActivity> {
+    public void bind( com.galanz.annotation.MainActivity target) {
+        target.textView=(android.widget.Button)target.findViewById(2131165316);
+        target.textView2=(android.widget.Button)target.findViewById(2131165317);
+        target.textView3=(android.widget.Button)target.findViewById(2131165318);
+    }
+}
+        这个类,不是我们开发的时候写的,而是在编译过程中,新生成一个java文件,再编译
+
+
+
+        (2)在使用类(MainActivity)中 进行调用
+          String className = activity.getClass().getName()+"$ViewBinder";
+          Class<?>  viewBindClass=Class.forName(className);
+          ViewBinder viewBinder = (ViewBinder) viewBindClass.newInstance();
+          viewBinder.bind(activity);
+
+
+
+
+3：代理------------方法织入
+    详见proxy下的代码------ProxyMain
+
+    （1）静态代理
+    静态代理是在编译时就将接口、实现类、代理类一股脑儿全部手动完成，
+    但如果我们需要很多的代理，每一个都这么手动的去创建实属浪费时间，
+    而且会有大量的重复代码
+
+    （2）动态代理
+            1）JDK动态代理：Proxy.newProxyInstance()----面向接口
+            2）cglib动态代理：--------------------------继承
+
+
+4:动态代理和注解实现OnClick
+
+    思路：
+
+    代理onClick方法-----（前提）-----
+
+    （1）需要有View.OnClickListener对象
+        对象哪里来?-----------------------代理
+            Object listener = Proxy.newProxyInstance(
+                    android.view.View$OnClickListener.class.getClassLoader(),
+                     new Class[]{android.view.View$OnClickListener.class},
+                    new InvocationHandler())
+    （2）需要给View.OnClickListener的onClick方法进行代理，当需要执行onClick方法的时候，
+                                                替换成自己的方法
+        怎么换?
+        在 InvocationHandler()的方法中,invoke方法内部,将OnClick方法,替换成加了注解的方法
+
+    （3）需要通过view的setOnClickListener方法进行设置
+
+          哪里获得view?
+          -----------------------------注解参数传递id,
+          View view = activity.findViewById(viewId);
+
+          如何执行view的setOnClickListener方法?
+          -----------------------------反射(方法名称:方法参数)
+          Method m = view.getClass().getMethod("setOnClickListener", android.view.View$OnClickListener.class);
+          m.invoke(view, listener);
+
+    基于以上三个要素，抽象出一个注解的注解--------事件注解
+
+    @Target(ElementType.ANNOTATION_TYPE)//放在注解之上
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface Event {
+        String listenerSetter();// 监听的方法名 比如: setOnClickListener()----------------（3）
+        Class<?> listenerType(); // 获取到需要监听的类 比如: View.OnClickListener---------（1）
+        String callBackListener();//比如 onClick()----------------------------------------（2）
+    }
+
+    再定一个OnClick注解，描述这个OnClick注解的使用场景
+    @Target(METHOD)
+    @Retention(RUNTIME)
+    @Event(listenerSetter = "setOnClickListener",
+            listenerType = View.OnClickListener.class,
+            callBackListener = "onClick") //上面写的注解类,注解在注解之上的)
+    public @interface OnClick {
+        int[] value();//允许多个view
+    }
+
+    同时也可以再定义一个OnLongClick注解，描述这个OnLongClick注解的使用场景。。。
+
+
+
