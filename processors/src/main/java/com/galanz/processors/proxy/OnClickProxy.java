@@ -1,9 +1,11 @@
 package com.galanz.processors.proxy;
 
 import android.app.Activity;
+import android.util.Log;
 import android.view.View;
 
 import com.galanz.processors.anno.Event;
+import com.galanz.processors.anno.OnClick;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
@@ -46,6 +48,7 @@ public class OnClickProxy {
                             int[] viewIds = (int[]) valueMethod.invoke(annotation);//通过反射获取到的valueMethod方法来获取到返回的数据,anotation就是我们的注解类的实例
                             for (int viewId : viewIds) {
                                 View view = activity.findViewById(viewId);
+//                                view.setOnClickListener((View.OnClickListener) listener);
                                 Method m = view.getClass().getMethod(listenerSetter, listenerType);//获取到View.setOnclickListener()方法
                                 m.invoke(view, listener);//执行的是view.setOnClickListener(new View.OnClickListener(){ onClick();})
                             }
@@ -77,6 +80,30 @@ public class OnClickProxy {
         }
         public void addMethod(String methodName, Method method) {
             methodMethod.put(methodName, method);
+        }
+    }
+
+
+    public void injectOnClickEvents(final Activity activity) {
+        Class<? extends Activity> clazz = activity.getClass();
+        Method[] methods = clazz.getDeclaredMethods();
+        for (final Method method : methods) {
+            if (method.isAnnotationPresent(OnClick.class)){
+                View.OnClickListener listener = new View.OnClickListener(){
+                    @Override
+                    public void onClick(View view) {
+                        try {
+                            method.invoke(activity,view);
+                        } catch (Exception e) {
+                        }
+                    }
+                };
+                int ids[] = method.getAnnotation(OnClick.class).value();
+                for (int viewId : ids) {
+                    View view = activity.findViewById(viewId);
+                    view.setOnClickListener(listener);
+                }
+            }
         }
     }
 }

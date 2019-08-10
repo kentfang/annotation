@@ -67,10 +67,66 @@ public class MainActivity$ViewBinder implements  ViewBinder<com.galanz.annotatio
 
     思路：
 
-    代理onClick方法-----（前提）-----
+    1:需要View
+         通过注解，传递view的id参数，通过注解的方式传递view的id
+         View view = activity.findViewById(viewId);
 
+    2:需要有View.OnClickListener对象
+        View.OnClickListener listener = new View.OnClickListener(){
+                        @Override
+                        public void onClick(View view) {
+
+                        }
+                    };
+    3:需要给View.OnClickListener的onClick方法
+            view.setOnClickListener(listener);
+
+    4:执行 点击事件 的时候，替换成 自己的方法
+                    @Override
+                    public void onClick(View view) {
+                        try {
+                            method.invoke(activity,view);
+                        } catch (Exception e) {
+                        }
+                    }
+
+
+
+    封装：
+    基于上述提到了：
+    有三个要素：
+        第一：View.OnClickListener对象（监听对象）
+                如果监听对象修改成View.OnLongClickListener()???
+
+        第二：设置监听对象的方法
+                view.setOnClickListener(listener);（监听设置）
+                如果监听设置方法改成了setOnLongClickListener()???
+
+        第三：回调方法onClick
+                如果监听设置 是setOnLongClickListener()，回调方法就修改成了onLongClick
+
+    怎么做到适配所有事件？？？
+
+           （1）为每个事件都分别做解析
+           （2）抽象出三个要素
+                String listenerSetter();// 监听的方法名 比如: setOnClickListener()
+                Class<?> listenerType(); // 获取到需要监听的类 比如: View.OnClickListener
+                String callBackListener();//比如 onClick()
+
+
+
+    封装事件注解：
+    @Target(ElementType.ANNOTATION_TYPE)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface Event {
+        String listenerSetter();// 监听的方法名 比如: setOnClickListener()
+        Class<?> listenerType(); // 获取到需要监听的类 比如: View.OnClickListener
+        String callBackListener();//比如 onClick()
+    }
+    在Onclick中，加入Event注解，设置好相关的参数
     （1）需要有View.OnClickListener对象
-        对象哪里来?-----------------------代理
+        对象哪里来?
+        -----------------------代理
             Object listener = Proxy.newProxyInstance(
                     android.view.View$OnClickListener.class.getClassLoader(),
                      new Class[]{android.view.View$OnClickListener.class},
@@ -79,39 +135,8 @@ public class MainActivity$ViewBinder implements  ViewBinder<com.galanz.annotatio
                                                 替换成自己的方法
         怎么换?
         在 InvocationHandler()的方法中,invoke方法内部,将OnClick方法,替换成加了注解的方法
-
     （3）需要通过view的setOnClickListener方法进行设置
-
-          哪里获得view?
-          -----------------------------注解参数传递id,
-          View view = activity.findViewById(viewId);
-
           如何执行view的setOnClickListener方法?
           -----------------------------反射(方法名称:方法参数)
           Method m = view.getClass().getMethod("setOnClickListener", android.view.View$OnClickListener.class);
           m.invoke(view, listener);
-
-    基于以上三个要素，抽象出一个注解的注解--------事件注解
-
-    @Target(ElementType.ANNOTATION_TYPE)//放在注解之上
-    @Retention(RetentionPolicy.RUNTIME)
-    public @interface Event {
-        String listenerSetter();// 监听的方法名 比如: setOnClickListener()----------------（3）
-        Class<?> listenerType(); // 获取到需要监听的类 比如: View.OnClickListener---------（1）
-        String callBackListener();//比如 onClick()----------------------------------------（2）
-    }
-
-    再定一个OnClick注解，描述这个OnClick注解的使用场景
-    @Target(METHOD)
-    @Retention(RUNTIME)
-    @Event(listenerSetter = "setOnClickListener",
-            listenerType = View.OnClickListener.class,
-            callBackListener = "onClick") //上面写的注解类,注解在注解之上的)
-    public @interface OnClick {
-        int[] value();//允许多个view
-    }
-
-    同时也可以再定义一个OnLongClick注解，描述这个OnLongClick注解的使用场景。。。
-
-
-

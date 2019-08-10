@@ -11,7 +11,7 @@ public class GalanzBinder {
             Class<?>  viewBindClass=Class.forName(className);
             ViewBinder viewBinder = (ViewBinder) viewBindClass.newInstance();
             viewBinder.bind(activity);
-            OnClickProxy.newInstance().injectEvents(activity);
+            OnClickProxy.newInstance().injectOnClickEvents(activity);
         } catch (Exception e) {
             e.printStackTrace();
         }

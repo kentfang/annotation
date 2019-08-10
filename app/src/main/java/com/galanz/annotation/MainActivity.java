@@ -7,15 +7,11 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.galanz.annotation.proxy.ITest;
-import com.galanz.annotation.proxy.ProxyTestByInterface;
-import com.galanz.annotation.proxy.ProxyTestByParent;
-import com.galanz.annotation.proxy.Test;
 import com.galanz.processors.GalanzBinder;
 import com.galanz.processors.anno.BindView;
 import com.galanz.processors.anno.OnClick;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity {
 
     @BindView(R.id.text1)
     Button textView;
@@ -39,13 +35,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (textView3!=null){
             textView3.setText("注入成功");
         }
-        textView3.setOnClickListener(new View.OnClickListener() {
+//        textView3.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                Toast.makeText(MainActivity.this,"R.id.text33333333333333333333",Toast.LENGTH_SHORT).show();
+//            }
+//        });
+//        textView2.setOnClickListener(this);
+
+        textView2.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
-            public void onClick(View view) {
-                Toast.makeText(MainActivity.this,"R.id.text33333333333333333333",Toast.LENGTH_SHORT).show();
+            public boolean onLongClick(View view) {
+                return false;
             }
         });
-        textView2.setOnClickListener(this);
     }
     @OnClick({R.id.text1,R.id.text2,R.id.text3})
     public void click(View v){
@@ -62,10 +65,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    @Override
-    public void onClick(View view) {
-        Toast.makeText(MainActivity.this,"R.id.text2222222222222222222222222",Toast.LENGTH_SHORT).show();
-    }
+//    @Override
+//    public void onClick(View view) {
+//        Toast.makeText(MainActivity.this,"R.id.text2222222222222222222222222",Toast.LENGTH_SHORT).show();
+//    }
 
 
 
