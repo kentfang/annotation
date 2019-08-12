@@ -42,13 +42,6 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //        });
 //        textView2.setOnClickListener(this);
-
-        textView2.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View view) {
-                return false;
-            }
-        });
     }
     @OnClick({R.id.text1,R.id.text2,R.id.text3})
     public void click(View v){
